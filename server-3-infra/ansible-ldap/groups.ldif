@@ -1,0 +1,5 @@
+dn: cn=piscineusers,ou=people,dc=infra,dc=piscine
+objectClass: posixGroup
+cn: students
+gidNumber: 10000
+memberUid: testuser

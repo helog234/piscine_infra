@@ -81,6 +81,7 @@
         dest: "/tmp/{{ item }}"
       loop:
         - ou_people.ldif
+        - groups.ldif
         - users.ldif
 
     - name: Importer l'unité d'organisation 'people'
@@ -89,6 +90,13 @@
       register: ldapadd_ou
       failed_when: ldapadd_ou.rc != 0 and "Already exists" not in ldapadd_ou.stderr
       changed_when: "'adding new entry' in ldapadd_ou.stdout"
+
+    - name: Importer l'entrée du groupe 'students'
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/groups.ldif
+      register: ldapadd_group
+      failed_when: ldapadd_group.rc != 0 and "Already exists" not in ldapadd_group.stderr
+      changed_when: "'adding new entry' in ldapadd_group.stdout"
 
     - name: Importer l'utilisateur de test
       command: >
