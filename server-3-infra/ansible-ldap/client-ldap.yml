@@ -5,7 +5,7 @@
   tasks:
     - name: Installer les paquets clients LDAP modernes
       apt:
-        name: [libnss-ldapd, libpam-ldap, ldap-utils, nscd, nslcd]
+        name: [libnss-ldapd, libpam-ldapd, ldap-utils, nscd, nslcd]
         state: present
         update_cache: yes
 
