@@ -1,0 +1,13 @@
+# ../ansible-ldap/users.ldif
+dn: uid=testuser,ou=people,dc=infra,dc=piscine
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Test User
+sn: User
+uid: testuser
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/testuser
+loginShell: /bin/bash
+userPassword: {SSHA}TQGJFgQPbLmia7yaT84HGNfL7bL/4ph8

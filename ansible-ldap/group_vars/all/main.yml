@@ -1,0 +1,7 @@
+---
+# Variables partagées pour tous les hôtes
+ldap_domain: "infra.piscine"
+ldap_organization: "42 Lausanne"
+ldap_base_dn: "dc=infra,dc=piscine"
+ldap_server_ip: "192.168.2.30"
+ldap_uri: "ldap://{{ ldap_server_ip }}"

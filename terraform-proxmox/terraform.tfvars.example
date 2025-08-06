@@ -1,0 +1,3 @@
+# terraform-proxmox/terraform.tfvars
+
+proxmox_api_token_secret = "VOTRE_TOKEN_API_PROXMOX"

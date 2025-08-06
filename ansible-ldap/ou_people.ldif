@@ -1,0 +1,4 @@
+# ../ansible-ldap/ou_people.ldif
+dn: ou=people,dc=infra,dc=piscine
+objectClass: organizationalUnit
+ou: people

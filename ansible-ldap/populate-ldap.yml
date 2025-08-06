@@ -1,0 +1,25 @@
+---
+- hosts: ldap
+  become: yes
+  tasks:
+    - name: Copier les fichiers LDIF pour le peuplement
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+      loop:
+        - ou_people.ldif
+        - users.ldif
+
+    - name: Importer l'unité d'organisation 'people'
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/ou_people.ldif
+      register: ldapadd_ou
+      failed_when: ldapadd_ou.rc != 0 and "Already exists" not in ldapadd_ou.stderr
+      changed_when: "'adding new entry' in ldapadd_ou.stdout"
+
+    - name: Importer l'utilisateur de test
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/users.ldif
+      register: ldapadd_user
+      failed_when: ldapadd_user.rc != 0 and "Already exists" not in ldapadd_user.stderr
+      changed_when: "'adding new entry' in ldapadd_user.stdout"

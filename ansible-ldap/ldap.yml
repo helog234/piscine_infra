@@ -1,0 +1,98 @@
+---
+- hosts: ldap_servers
+  become: yes
+  tasks:
+    - name: Installer les paquets slapd et ldap-utils
+      apt:
+        name: [slapd, ldap-utils]
+        state: present
+        update_cache: yes
+
+    - name: Générer le hash du mot de passe admin LDAP
+      command: "slappasswd -s {{ ldap_root_password }}"
+      register: hashed_password
+      changed_when: false
+
+    - name: Créer le fichier LDIF de modification du mot de passe
+      copy:
+        dest: /tmp/change_root_password.ldif
+        content: |
+          dn: olcDatabase={1}mdb,cn=config
+          changetype: modify
+          replace: olcRootPW
+          olcRootPW: {{ hashed_password.stdout }}
+
+    - name: Appliquer le nouveau mot de passe admin à LDAP
+      command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/change_root_password.ldif
+      changed_when: true
+
+    - name: Créer le fichier LDIF pour le suffixe de la base (base_dn)
+      copy:
+        dest: /tmp/change_suffix.ldif
+        content: |
+          dn: olcDatabase={1}mdb,cn=config
+          changetype: modify
+          replace: olcSuffix
+          olcSuffix: {{ ldap_base_dn }}
+
+    - name: Appliquer le nouveau suffixe (olcSuffix)
+      command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/change_suffix.ldif
+      changed_when: true
+
+    - name: Créer le fichier LDIF pour l'administrateur de la base (root_dn)
+      copy:
+        dest: /tmp/change_rootdn.ldif
+        content: |
+          dn: olcDatabase={1}mdb,cn=config
+          changetype: modify
+          replace: olcRootDN
+          olcRootDN: cn=admin,{{ ldap_base_dn }}
+
+    - name: Appliquer le nouvel administrateur (olcRootDN)
+      command: ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/change_rootdn.ldif
+      changed_when: true
+
+    - name: Créer le fichier LDIF pour la base de l'annuaire (base DN)
+      copy:
+        dest: /tmp/base_dn.ldif
+        content: |
+          dn: {{ ldap_base_dn }}
+          objectClass: top
+          objectClass: dcObject
+          objectClass: organization
+          o: {{ ldap_organization }}
+
+    - name: Importer l'entrée de base de l'annuaire (base DN)
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/base_dn.ldif
+      register: ldapadd_base
+      failed_when: ldapadd_base.rc != 0 and "Already exists" not in ldapadd_base.stderr
+      changed_when: "'adding new entry' in ldapadd_base.stdout"
+
+    - name: Autoriser le trafic LDAP dans le pare-feu
+      ufw:
+        rule: allow
+        port: "389"
+        proto: tcp
+
+    - name: Copier les fichiers LDIF pour le peuplement
+      copy:
+        src: "{{ item }}"
+        dest: "/tmp/{{ item }}"
+      loop:
+        - ou_people.ldif
+        - users.ldif
+
+    - name: Importer l'unité d'organisation 'people'
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/ou_people.ldif
+      register: ldapadd_ou
+      failed_when: ldapadd_ou.rc != 0 and "Already exists" not in ldapadd_ou.stderr
+      changed_when: "'adding new entry' in ldapadd_ou.stdout"
+
+    - name: Importer l'utilisateur de test
+      command: >
+        ldapadd -x -D "cn=admin,{{ ldap_base_dn }}" -w "{{ ldap_root_password }}" -f /tmp/users.ldif
+      register: ldapadd_user
+      failed_when: ldapadd_user.rc != 0 and "Already exists" not in ldapadd_user.stderr
+      changed_when: "'adding new entry' in ldapadd_user.stdout"

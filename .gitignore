@@ -1,0 +1,33 @@
+# Clés SSH - TRÈS IMPORTANT
+.ssh/id_*
+.ssh/*_rsa*
+.ssh/*_ed25519*
+*.pem
+*.key
+
+# Fichiers Terraform sensibles
+terraform.tfvars
+*.tfvars
+*.tfstate
+*.tfstate.backup
+*.plan
+.terraform/
+.terraform.lock.hcl
+
+# Secrets Ansible
+ansible-ldap/group_vars/all/secrets.yml
+
+# Cache et fichiers personnels
+.ansible/galaxy_token
+.bash_history
+.cache/
+.config/
+.gitconfig
+.sudo_as_admin_successful
+.terraform.d/
+
+# Logs
+*.log
+*.old
+*~
+*.swp
