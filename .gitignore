@@ -31,3 +31,10 @@
 *.old
 *~
 *.swp
+
+# Fichiers de configuration shell personnels
+.bashrc
+.bash_logout
+.profile
+.bash_history
+.DS_Store

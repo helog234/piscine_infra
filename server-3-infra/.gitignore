@@ -1,0 +1,33 @@
+# Clés SSH - TRÈS IMPORTANT
+server-3-infra/.ssh/id_*
+server-3-infra/.ssh/*_rsa*
+server-3-infra/.ssh/*_ed25519*
+*.pem
+*.key
+
+# Fichiers Terraform sensibles
+server-3-infra/*/terraform.tfvars
+server-3-infra/*/*.tfvars
+server-3-infra/*/*.tfstate
+server-3-infra/*/*.tfstate.backup
+server-3-infra/*/*.plan
+server-3-infra/*/.terraform/
+server-3-infra/*/.terraform.lock.hcl
+
+# Secrets Ansible
+server-3-infra/*/group_vars/all/secrets.yml
+
+# Cache et fichiers personnels
+server-3-infra/.ansible/galaxy_token
+server-3-infra/.bash_history
+server-3-infra/.cache/
+server-3-infra/.config/
+server-3-infra/.gitconfig
+server-3-infra/.sudo_as_admin_successful
+server-3-infra/.terraform.d/
+
+# Logs
+*.log
+*.old
+*~
+*.swp
