@@ -6,16 +6,16 @@
 *.key
 
 # Fichiers Terraform sensibles
-terraform.tfvars
-*.tfvars
-*.tfstate
-*.tfstate.backup
-*.plan
-.terraform/
-.terraform.lock.hcl
+*/terraform.tfvars
+*/*.tfvars
+*/*.tfstate
+*/*.tfstate.backup
+*/*.plan
+*/.terraform/
+*/.terraform.lock.hcl
 
 # Secrets Ansible
-ansible-ldap/group_vars/all/secrets.yml
+*/group_vars/all/secrets.yml
 
 # Cache et fichiers personnels
 .ansible/galaxy_token

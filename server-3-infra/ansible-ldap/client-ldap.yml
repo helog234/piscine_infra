@@ -1,0 +1,69 @@
+---
+- name: Configurer le poste Ubuntu Desktop pour LDAP
+  hosts: desktop_vms
+  become: yes
+  tasks:
+    - name: Installer les paquets clients LDAP modernes
+      apt:
+        name: [libnss-ldapd, libpam-ldap, ldap-utils, nscd, nslcd]
+        state: present
+        update_cache: yes
+
+    - name: Configurer le service de recherche de noms (nslcd)
+      copy:
+        dest: /etc/nslcd.conf
+        owner: root
+        group: nslcd
+        mode: '0640'
+        content: |
+          uid nslcd
+          gid nslcd
+          uri {{ ldap_uri }}
+          base {{ ldap_base_dn }}
+      notify: Restart nslcd
+
+    - name: Configurer le switch de services de noms (nsswitch.conf)
+      lineinfile:
+        path: /etc/nsswitch.conf
+        regexp: '^({{ item }}:) .*'
+        line: '\1 files systemd ldap'
+        backrefs: yes
+      loop:
+        - passwd
+        - group
+        - shadow
+      notify: Restart nscd
+
+    - name: Activer l'authentification LDAP et la création du home (PAM)
+      command: pam-auth-update --enable ldapd --enable mkhomedir --force
+
+    - name: S'assurer que la configuration PAM pour les mots de passe LDAP est correcte
+      lineinfile:
+        path: /etc/pam.d/common-password
+        regexp: '^password\s+\[success=1 default=ignore\]\s+pam_ldap.so'
+        line: 'password        [success=1 default=ignore]      pam_ldap.so use_authtok sha512'
+        insertafter: '^password\s+\[success=2 default=ignore\]\s+pam_unix.so'
+        state: present
+
+    - name: Configurer le client ldap-utils (pour ldapsearch)
+      copy:
+        dest: /etc/ldap/ldap.conf
+        content: |
+          BASE    {{ ldap_base_dn }}
+          URI     {{ ldap_uri }}
+
+  handlers:
+    - name: Restart nslcd
+      service:
+        name: nslcd
+        state: restarted
+        enabled: yes
+      listen: "Restart nslcd"
+
+    - name: Restart nscd
+      service:
+        name: nscd
+        state: restarted
+        enabled: yes
+      listen: "Restart nscd"
+
