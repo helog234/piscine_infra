@@ -31,3 +31,66 @@
 *.old
 *~
 *.swp
+
+# Fichiers de configuration shell personnels
+.bashrc
+.bash_logout
+.profile
+.bash_history
+.DS_Store
+
+# ===========================================
+# CONFIGURATION PERSONNELLE - NE PAS COMMITER
+# ===========================================
+
+# Fichiers de configuration IDE/Éditeur
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers système Mac/Windows/Linux  
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Fichiers de configuration personnelle
+.env.local
+.env.personal
+config.personal.*
+settings.personal.*
+
+# Logs de développement personnel
+debug.log
+dev.log
+test-*.log
+
+# Fichiers de backup personnels
+*.backup
+*.bak
+*.orig
+
+# Configuration Terraform locale
+terraform-proxmox/.terraform.lock.hcl
+terraform-proxmox/terraform.tfvars.local
+terraform-proxmox/personal.tf
+
+# Variables Ansible personnelles
+ansible-ldap/host_vars/
+ansible-ldap/group_vars/*/personal.yml
+ansible-ldap/inventory.personal.ini
+
+# Scripts de développement/test personnels
+scripts/personal/
+test-*.sh
+dev-*.sh
+my-*.sh
+
+# Fichiers système à ignorer définitivement
+.bash_logout
+.bashrc  
+.profile
+.lesshst
+terraform.tfstate
