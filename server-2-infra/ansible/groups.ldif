@@ -1,0 +1,8 @@
+dn: cn=users,dc=local,dc=test
+objectClass: posixGroup
+cn: users
+gidNumber: 10000
+memberUid: <insert_username>
+memberUid: <insert_username>
+memberUid: <insert_username>
+

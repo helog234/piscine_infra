@@ -1,0 +1,140 @@
+- name: Configurer le poste Ubuntu Desktop pour LDAP
+  hosts: desktop
+  become: true
+  vars:
+    ldap_uri: "ldap://192.168.2.20"
+    ldap_base: "dc=local,dc=test"
+    ldap_binddn: "cn=admin,dc=local,dc=test"
+    ldap_bindpw: "<insert_passwd_here>"
+
+  tasks:
+
+    - name: Attendre que le lock APT soit libéré
+      shell: |
+        while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+              fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+              fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+          echo "En attente du lock APT..."
+          sleep 5
+        done
+      changed_when: false
+
+    - name: Corriger les installations interrompues (dpkg)
+      command: dpkg --configure -a
+
+    - name: Supprimer l'ancien paquet libnss-ldap (lib trop ancienne)
+      apt:
+        name: libnss-ldap
+        state: absent
+        purge: yes
+        force: yes
+      ignore_errors: yes
+
+    - name: Installer les paquets LDAP client avec la bonne lib (libnss-ldapd)
+      apt:
+        name:
+          - libnss-ldapd
+          - libpam-ldap
+          - ldap-utils
+          - nscd
+          - nslcd
+        state: present
+        update_cache: yes
+
+    - name: Configurer ldap.conf (ancien système)
+      lineinfile:
+        path: /etc/ldap/ldap.conf
+        regexp: '^{{ item.key }}'
+        line: "{{ item.key }} {{ item.value }}"
+        create: yes
+      loop:
+        - { key: 'BASE', value: '{{ ldap_base }}' }
+        - { key: 'URI', value: '{{ ldap_uri }}' }
+
+    - name: Configurer ldap.conf (nouveau système)
+      copy:
+        dest: /etc/ldap.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          base {{ ldap_base }}
+          uri {{ ldap_uri }}
+          ldap_version 3
+          bind_policy soft
+
+    - name: Configurer /etc/nslcd.conf
+      copy:
+        dest: /etc/nslcd.conf
+        owner: root
+        group: root
+        mode: '0640'
+        content: |
+          uid nslcd
+          gid nslcd
+          uri {{ ldap_uri }}
+          base {{ ldap_base }}
+          binddn {{ ldap_binddn }}
+          bindpw {{ ldap_bindpw }}
+          scope sub
+          tls_reqcert never
+
+    - name: S'assurer que /etc/nsswitch.conf contient ldap pour passwd/group/shadow
+      blockinfile:
+        path: /etc/nsswitch.conf
+        marker: "# {mark} ANSIBLE MANAGED LDAP CONFIG"
+        block: |
+          passwd:         files ldap systemd
+          group:          files ldap systemd
+          shadow:         files ldap
+
+    - name: Activer la création automatique des répertoires home (PAM)
+      lineinfile:
+        path: /etc/pam.d/common-session
+        line: 'session required        pam_mkhomedir.so skel=/etc/skel/ umask=0022'
+        create: yes
+        state: present
+        insertafter: 'pam_unix.so'
+
+    - name: Redémarrer nslcd pour prendre en compte la configuration
+      service:
+        name: nslcd
+        state: restarted
+        enabled: yes
+
+    - name: Redémarrer nscd si présent
+      service:
+        name: nscd
+        state: restarted
+        enabled: yes
+      ignore_errors: yes
+
+    - name: Pause pour laisser le service NSLCD se stabiliser
+      pause:
+        seconds: 5
+
+    - name: Vérifier que l'utilisateur LDAP <user> est visible via getent
+      shell: getent passwd <insert_user_name_here>
+      register: ldap_user
+      failed_when: ldap_user.rc != 0
+
+    - name: Afficher les infos LDAP de l'utilisateur
+      debug:
+        var: ldap_user.stdout
+
+    - name: Debug des logs NSLCD si l'utilisateur LDAP est introuvable
+      command: journalctl -u nslcd --no-pager | tail -n 20
+      register: nslcd_logs
+      changed_when: false
+      when: ldap_user is failed
+
+    - name: Afficher les derniers logs NSLCD
+      debug:
+        var: nslcd_logs.stdout_lines
+      when: ldap_user is failed
+
+    - name: Installer les paquets NFS client
+      apt:
+        name: nfs-common
+        state: present
+        update_cache: yes

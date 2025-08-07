@@ -1,0 +1,142 @@
+---
+- hosts: ldap
+  become: yes
+  vars:
+    ldap_domain: "local.test"
+    ldap_organization: "42 Geneva"
+    ldap_admin_password: "<insert_SSHA_passwd_en_dur>"
+
+  tasks:
+    - name: Allow LDAP port 389 in UFW
+      ufw:
+        rule: allow
+        port: "389"
+        proto: tcp
+      
+    - name: Installer les paquets slapd et ldap-utils
+      apt:
+        name:
+          - slapd
+          - ldap-utils
+        state: present
+        update_cache: yes
+
+    - name: Stopper slapd avant réinitialisation
+      service:
+        name: slapd
+        state: stopped
+
+    - name: Supprimer l'ancienne configuration slapd.d
+      file:
+        path: /etc/ldap/slapd.d
+        state: absent
+
+    - name: Supprimer l'ancienne base de données LDAP
+      file:
+        path: /var/lib/ldap
+        state: absent
+
+    - name: Recréer le dossier /var/lib/ldap si supprimé
+      file:
+        path: /var/lib/ldap
+        state: directory
+        owner: openldap
+        group: openldap
+        mode: '0700'
+
+    - name: Reconfigurer slapd avec dpkg-reconfigure (non interactif)
+      debconf:
+        name: slapd
+        question: "{{ item.question }}"
+        value: "{{ item.value }}"
+        vtype: "{{ item.vtype }}"
+      loop:
+        - { question: "slapd/no_configuration", value: "false", vtype: "boolean" }
+        - { question: "slapd/domain", value: "{{ ldap_domain }}", vtype: "string" }
+        - { question: "slapd/organization", value: "{{ ldap_organization }}", vtype: "string" }
+        - { question: "slapd/password1", value: "{{ ldap_admin_password }}", vtype: "password" }
+        - { question: "slapd/password2", value: "{{ ldap_admin_password }}", vtype: "password" }
+        - { question: "slapd/backend", value: "MDB", vtype: "select" }
+        - { question: "slapd/purge_database", value: "true", vtype: "boolean" }
+        - { question: "slapd/move_old_database", value: "true", vtype: "boolean" }
+        - { question: "slapd/allow_ldap_v2", value: "false", vtype: "boolean" }
+
+    - name: Forcer la reconfiguration de slapd (générer la config)
+      command: dpkg-reconfigure -f noninteractive slapd
+
+    - name: Démarrer slapd après reconfiguration
+      service:
+        name: slapd
+        state: started
+        enabled: yes
+
+    - name: Vérifier que slapd est en écoute sur le port 389
+      wait_for:
+        port: 389
+        state: started
+        timeout: 30
+
+    - name: Afficher la configuration LDAP de base
+      command: ldapsearch -x -LLL -H ldap://localhost -b dc={{ ldap_domain.split('.')[0] }},dc={{ ldap_domain.split('.')[1] }} dn
+      register: ldapsearch_output
+      changed_when: false
+
+    - debug:
+        var: ldapsearch_output.stdout_lines
+
+    - name: Copier le fichier ou_people.ldif sur le serveur LDAP
+      copy:
+        src: ./ou_people.ldif
+        dest: /tmp/ou_people.ldif
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Importer l'unité organisationnelle people dans LDAP (si pas déjà fait)
+      command: >
+        ldapadd -x -D "cn=admin,dc=local,dc=test" -w "{{ ldap_admin_password }}" -f /tmp/ou_people.ldif
+      register: ldapadd_ou_result
+      failed_when: ldapadd_ou_result.rc != 0
+                   and ("Already exists" not in ldapadd_ou_result.stderr)
+                   and ("Already exists" not in ldapadd_ou_result.stdout)
+
+    - name: copier le fichier init.ldif sur le serveur ldap
+      copy:
+        src: ./init.ldif
+        dest: /tmp/init.ldif
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Importer le fichier init.ldif dans LDAP (si pas déjà fait)
+      command: >
+        ldapadd -x -D "cn=admin,dc=local,dc=test" -w "{{ ldap_admin_password }}" -f /tmp/init.ldif
+      register: ldapadd_result
+      failed_when: ldapadd_result.rc != 0
+                   and ("Already exists" not in ldapadd_result.stderr)
+                   and ("Already exists" not in ldapadd_result.stdout)
+
+    - name: copier le fichier init.ldif sur le serveur ldap
+      copy:
+        src: ./groups.ldif
+        dest: /tmp/groups.ldif
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Importer les groupes LDAP
+      command: >
+        ldapadd -x -D "cn=admin,dc=local,dc=test" -w "{{ ldap_admin_password }}" -f /tmp/groups.ldif
+      register: ldapadd_result
+      failed_when: ldapadd_result.rc != 0
+                   and ("Already exists" not in ldapadd_result.stderr)
+                   and ("Already exists" not in ldapadd_result.stdout)
+
+    - name: Afficher la sortie standard de ldapadd
+      debug:
+        msg: "{{ ldapadd_result.stdout }}"
+
+    - name: Afficher la sortie d'erreur de ldapadd
+      debug:
+        msg: "{{ ldapadd_result.stderr }}"
+
