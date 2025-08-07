@@ -1,5 +1,5 @@
 ---
-- name: Configurer le poste Ubuntu Desktop pour LDAP
+- name: Configurer le poste Ubuntu Desktop pour LDAP et NFS
   hosts: desktop_vms
   become: yes
   tasks:
@@ -52,6 +52,25 @@
           BASE    {{ ldap_base_dn }}
           URI     {{ ldap_uri }}
 
+    - name: (NFS) Installer les paquets client NFS et Autofs
+      apt:
+        name: [nfs-common, autofs]
+        state: present
+
+    - name: (NFS) Configurer le fichier maître d'autofs pour gérer le /home
+      lineinfile:
+        path: /etc/auto.master
+        regexp: '^/home'
+        line: '/home /etc/auto.home --timeout=60'
+        state: present
+      notify: Restart autofs
+
+    - name: (NFS) Créer la "carte" de montage pour /home
+      copy:
+        dest: /etc/auto.home
+        content: "* -fstype=nfs,rw,soft,intr 192.168.2.32:/srv/nfs/home/&"
+      notify: Restart autofs
+
   handlers:
     - name: Restart nslcd
       service:
@@ -66,4 +85,11 @@
         state: restarted
         enabled: yes
       listen: "Restart nscd"
+
+    - name: Restart autofs
+      service:
+        name: autofs
+        state: restarted
+        enabled: yes
+      listen: "Restart autofs"
 
