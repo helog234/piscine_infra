@@ -1,0 +1,29 @@
+dn: ou=people,dc=local,dc=test
+objectClass: organizationalUnit
+ou: people
+
+dn: uid=jdupont,ou=people,dc=local,dc=test
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Jean Dupont
+sn: Dupont
+uid: <insert_login>
+uidNumber: 2001
+gidNumber: 10000
+homeDirectory: /home/jdupont
+loginShell: /bin/bash
+userPassword: <cmd_slappaswd_and_insert_pwd_here>
+
+dn: uid=mmartin,ou=people,dc=local,dc=test
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Marie Martin
+sn: Martin
+uid: <insert_login>
+uidNumber: 2002
+gidNumber: 10000
+homeDirectory: /home/mmartin
+loginShell: /bin/bash
+userPassword: <cmd_slappaswd_and_insert_pwd_here>

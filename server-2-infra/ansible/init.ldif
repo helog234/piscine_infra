@@ -1,0 +1,27 @@
+# ~/ansible/init.ldif
+dn: dc=local,dc=test
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: 42 Geneva
+dc: local
+
+dn: cn=admin,dc=local,dc=test
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: admin
+description: LDAP administrator
+userPassword: <use_cmd_slappasswd_to_create_SSHA_and_paste_it_here>
+
+dn: uid=ubuntu,dc=local,dc=test
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Ubuntu User
+sn: User
+uid: ubuntu
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/ubuntu
+loginShell: /bin/bash
+userPassword: <use_cmd_slappasswd_to_create_SSHA_and_paste_it_here>
