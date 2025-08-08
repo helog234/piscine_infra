@@ -8,6 +8,6 @@ sn: User
 uid: testuser
 uidNumber: 10000
 gidNumber: 10000
-homeDirectory: /home/testuser
+homeDirectory: /home/net/testuser
 loginShell: /bin/bash
 userPassword: {SSHA}TQGJFgQPbLmia7yaT84HGNfL7bL/4ph8

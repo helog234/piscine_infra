@@ -2,6 +2,12 @@
 - hosts: ldap_servers
   become: yes
   tasks:
+    - name: Attendre que le verrou apt soit libéré
+      shell: "while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do echo 'Attente du verrou apt...'; sleep 10; done;"
+      changed_when: false
+      tags:
+        - always
+
     - name: Installer les paquets slapd et ldap-utils
       apt:
         name: [slapd, ldap-utils]

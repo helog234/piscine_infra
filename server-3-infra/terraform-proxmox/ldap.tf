@@ -36,7 +36,7 @@ resource "proxmox_virtual_environment_vm" "ldap-server" {
     ip_config {
       ipv4 {
         address = "192.168.2.30/24"
-        gateway = "192.168.1.1"
+        gateway = "192.168.2.1"
       }
     }
   }

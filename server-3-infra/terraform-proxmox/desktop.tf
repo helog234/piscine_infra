@@ -35,7 +35,7 @@ resource "proxmox_virtual_environment_vm" "desktop-vm" {
     ip_config {
       ipv4 {
         address = "192.168.2.31/24"
-        gateway = "192.168.1.1"
+        gateway = "192.168.2.1"
       }
     }
   }

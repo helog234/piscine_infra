@@ -26,6 +26,8 @@ server-3-infra/.gitconfig
 server-3-infra/.sudo_as_admin_successful
 server-3-infra/.terraform.d/
 
+server-3-infra/packer-ubuntu/secrets.auto.pkrvars.hcl
+
 # Logs
 *.log
 *.old

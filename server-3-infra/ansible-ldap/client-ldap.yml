@@ -52,24 +52,25 @@
           BASE    {{ ldap_base_dn }}
           URI     {{ ldap_uri }}
 
-    - name: (NFS) Installer les paquets client NFS et Autofs
+    - name: (NFS) Installer les paquets client NFS
       apt:
-        name: [nfs-common, autofs]
+        name: nfs-common
         state: present
 
-    - name: (NFS) Configurer le fichier maître d'autofs pour gérer le /home
-      lineinfile:
-        path: /etc/auto.master
-        regexp: '^/home'
-        line: '/home /etc/auto.home --timeout=60'
-        state: present
-      notify: Restart autofs
+    - name: (NFS) Créer le point de montage pour les dossiers réseau
+      file:
+        path: /home/net
+        state: directory
+        mode: '0755'
 
-    - name: (NFS) Créer la "carte" de montage pour /home
-      copy:
-        dest: /etc/auto.home
-        content: "* -fstype=nfs,rw,soft,intr 192.168.2.32:/srv/nfs/home/&"
-      notify: Restart autofs
+    - name: (NFS) Monter le partage des dossiers personnels via /etc/fstab
+      ansible.posix.mount:
+        src: 192.168.2.32:/srv/nfs/home  # Le partage sur le serveur NFS
+        path: /home/net                  # Le point de montage sur le client
+        fstype: nfs
+        opts: defaults
+        state: mounted                   # 'mounted' va le monter ET l'ajouter à /etc/fstab
+
 
   handlers:
     - name: Restart nslcd
