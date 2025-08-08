@@ -98,3 +98,4 @@ terraform.tfstate
 secrets.auto.pkrvars.hcl
 */http/user-data
 */users.ldif
+*/variables.tf
