@@ -37,6 +37,13 @@
     - name: Activer l'authentification LDAP et la création du home (PAM)
       command: pam-auth-update --enable ldapd --enable mkhomedir --force
 
+    - name: Rendre les homes privés à la création (PAM)
+      lineinfile:
+        path: /etc/pam.d/common-session
+        regexp: '^session\s+required\s+pam_mkhomedir.so'
+        line: 'session required        pam_mkhomedir.so skel=/etc/skel/ umask=0077'
+        backrefs: yes
+
     - name: S'assurer que la configuration PAM pour les mots de passe LDAP est correcte
       lineinfile:
         path: /etc/pam.d/common-password
