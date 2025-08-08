@@ -1,0 +1,32 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-template
+    password: "$6$PLACEHOLDER_PASSWORD_HASH"
+    username: ubuntu
+  storage:
+    layout:
+      name: lvm
+  ssh:
+    install-server: true
+    allow-pw: true
+    authorized-keys:
+      - "ssh-ed25519 PLACEHOLDER_PUBLIC_KEY_HERE"
+  packages:
+    - qemu-guest-agent
+    - ufw
+    - cloud-init
+  late-commands:
+    - curtin in-target -- systemctl enable qemu-guest-agent
+    - curtin in-target -- systemctl start qemu-guest-agent
+    - curtin in-target -- ufw default deny incoming
+    - curtin in-target -- ufw default allow outgoing
+    - curtin in-target -- ufw allow ssh
+    - curtin in-target -- ufw --force enable
+    - curtin in-target -- sh -c "echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-ubuntu-nopasswd"
+
+write_files:
+  - path: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    content: |
+      network: {config: disabled}

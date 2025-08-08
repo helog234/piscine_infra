@@ -94,3 +94,6 @@ my-*.sh
 .profile
 .lesshst
 terraform.tfstate
+*.auto.pkrvars.hcl
+secrets.auto.pkrvars.hcl
+*/http/user-data
